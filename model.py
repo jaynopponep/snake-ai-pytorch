@@ -4,24 +4,31 @@ import torch.optim as optim
 import torch.nn.functional as F
 import os
 
-class Linear_QNet(nn.Module):
+
+class Linear_QNet(nn.Module):  # Inherits from nn.Module
     def __init__(self, input_size, hidden_size, output_size):
         super().__init__()
         self.linear1 = nn.Linear(input_size, hidden_size)
         self.linear2 = nn.Linear(hidden_size, output_size)
+        # Refer to how a NN looks
 
-    def forward(self, x):
-        x = F.relu(self.linear1(x))
-        x = self.linear2(x)
+    def forward(self, x):  # Imports the forward function
+        x = F.relu(self.linear1(x))  # Applies the linear layer and activation function (functional module)
+        x = self.linear2(x)  # No activation function needed
         return x
 
-    def save(self, file_name='model.pth'):
+    def save(self, file_name='model.pth'):  # Helper function that saves the model
         model_folder_path = './model'
-        if not os.path.exists(model_folder_path):
+        if not os.path.exists(model_folder_path):  # Check if the path already exists. if not make the path
             os.makedirs(model_folder_path)
-
         file_name = os.path.join(model_folder_path, file_name)
         torch.save(self.state_dict(), file_name)
+
+    def load(filepath):
+        model = Linear_QNet(11, 256, 3)  # match the parameters used during initialization
+        model.load_state_dict(torch.load(filepath))
+        model.eval()
+        return model
 
 
 class QTrainer:
@@ -45,7 +52,7 @@ class QTrainer:
             next_state = torch.unsqueeze(next_state, 0)
             action = torch.unsqueeze(action, 0)
             reward = torch.unsqueeze(reward, 0)
-            done = (done, )
+            done = (done,)
 
         # 1: predicted Q values with current state
         pred = self.model(state)
@@ -57,7 +64,7 @@ class QTrainer:
                 Q_new = reward[idx] + self.gamma * torch.max(self.model(next_state[idx]))
 
             target[idx][torch.argmax(action[idx]).item()] = Q_new
-    
+
         # 2: Q_new = r + y * max(next_predicted Q value) -> only do this if not done
         # pred.clone()
         # preds[argmax(action)] = Q_new
@@ -66,6 +73,5 @@ class QTrainer:
         loss.backward()
 
         self.optimizer.step()
-
-
-
+        # 2: Q_new = r + y * max(next_predicted Q value) -> Only do this if not done
+        # pred.clone() => preds[argmax(action)] = Q_new
