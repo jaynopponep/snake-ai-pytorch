@@ -5,6 +5,8 @@ from collections import deque
 from game import SnakeGameAI, Direction, Point
 from model import Linear_QNet, QTrainer
 from helper import plot
+import os
+from functions import get_highest_epoch
 
 MAX_MEMORY = 100_000
 BATCH_SIZE = 1000
@@ -20,12 +22,15 @@ class Agent:
         self.epsilon = 0  # Controls randomness
         self.gamma = 0.9  # Discount rate, must be smaller than one (usually 0.8-0.9)
         self.memory = deque(maxlen=MAX_MEMORY)  # pop left when old memory overloads
+        self.highest_epoch = get_highest_epoch()
+        
         if load_model:
             print("Loading existing model...")
-            self.model = Linear_QNet.load("model/model_epoch_95.pth")
+            self.model = Linear_QNet.load(f"model/model_epoch_{self.highest_epoch}.pth")
             print("Model loaded successfully.")
         else:
             print("Initializing new model...")
+            os.mkdir("model")
             self.model = Linear_QNet(11, 256, 3)
         self.trainer = QTrainer(self.model, lr=LEARNING_RATE, gamma=self.gamma)
         # Above are simple initializations to the agent class
@@ -79,17 +84,17 @@ class Agent:
 
     def remember(self, state, action, reward, next_state, done):
         self.memory.append((state, action, reward, next_state, done))  # pop left if max memory reached
-    # Remembers the previous state including reward, last action, etc to learn from that state.
+        # Remembers the previous state including reward, last action, etc to learn from that state.
 
     def train_long_memory(self):
         if len(self.memory) > BATCH_SIZE:
             mini_sample = random.sample(self.memory, BATCH_SIZE)
         else:
             mini_sample = self.memory
-    # Checks if memory is exceeding batch size. If so, we sample off the memory based on batch size (which is smaller
+        # Checks if memory is exceeding batch size. If so, we sample off the memory based on batch size (which is smaller
         # than memory size) Otherwise, it will sample off the entire memory.
 
-    # Once we take our "mini_sample" whether it be the entire memory or not, we extract or unzip
+        # Once we take our "mini_sample" whether it be the entire memory or not, we extract or unzip
         # each experience as a tuple, resulting in separate tuples for experiences
         states, actions, rewards, next_states, dones = zip(*mini_sample)
 
@@ -98,7 +103,7 @@ class Agent:
 
     def train_short_memory(self, state, action, reward, next_state, done):
         self.trainer.train_step(state, action, reward, next_state, done)
-    # Trains on the most recent experience
+        # Trains on the most recent experience
 
     def get_action(self, state):
         # random moves: tradeoff exploration / exploitation
@@ -175,5 +180,4 @@ def train(epochs, load_model=False):
 
 if __name__ == '__main__':
     load_existing_model = True
-    train(epochs=105, load_model=load_existing_model)
-
+    train(epochs=5, load_model=load_existing_model)
