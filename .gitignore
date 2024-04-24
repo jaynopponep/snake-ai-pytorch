@@ -1,2 +1,7 @@
 /env
+<<<<<<< HEAD
 /__pycache__
+=======
+/__pycache__
+/model
+>>>>>>> cb947654db484c00dd94caa6f21a205b15d4cf57
